@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: ./gen-test-branch <branch-count>
+
+Example:
+  ./gen-test-branch 6
+
+This script recreates test-branch-1..N from main and makes 3 commits on each branch.
+EOF
+}
+
+if [[ $# -ne 1 ]]; then
+  usage
+  exit 1
+fi
+
+if [[ ! "$1" =~ ^[1-9][0-9]*$ ]]; then
+  echo "branch-count must be a positive integer" >&2
+  exit 1
+fi
+
+branch_count="$1"
+repo_root="$(git rev-parse --show-toplevel)"
+
+cd "$repo_root"
+
+if ! git rev-parse --verify main >/dev/null 2>&1; then
+  echo "main branch was not found" >&2
+  exit 1
+fi
+
+if ! git diff --quiet --ignore-submodules -- fixtures/commit-graph || ! git diff --cached --quiet --ignore-submodules -- fixtures/commit-graph; then
+  echo "changes under fixtures/commit-graph are present; clean them before running this script" >&2
+  exit 1
+fi
+
+themes=(
+  "amber-otter"
+  "cobalt-lynx"
+  "moss-falcon"
+  "coral-heron"
+  "silver-ibis"
+  "saffron-fox"
+  "teal-wolf"
+  "crimson-swallow"
+  "slate-badger"
+)
+
+seed_notes=(
+  "seeded a branch with a compact center lane"
+  "seeded a branch with a taller right-side lane"
+  "seeded a branch with a narrow lower lane"
+  "seeded a branch with a long outer lane"
+  "seeded a branch with a curved upper lane"
+)
+
+adjustments=(
+  "nudged the lane marker toward the left cluster"
+  "widened spacing around the mid-graph merge hint"
+  "tightened the column handoff around grouped commits"
+  "increased elbow room near the branch header cluster"
+  "stretched the footer spacing beneath clustered refs"
+  "pushed the extreme lane farther from the center stack"
+)
+
+statuses=(
+  "ready for stacked-lane verification"
+  "ready for parallel-lane inspection"
+  "ready for center-lane verification"
+  "ready for upper-lane verification"
+  "ready for lower-lane verification"
+  "ready for outer-lane verification"
+)
+
+segments=(
+  "north-west"
+  "east-ridge"
+  "center-fold"
+  "upper-arc"
+  "lower-ribbon"
+  "outer-run"
+  "mid-column"
+)
+
+layout_files=(
+  "src/graph/layout-shell.ts"
+  "src/graph/legend.tsx"
+  "src/graph/node-badges.ts"
+  "src/graph/path-bends.ts"
+  "src/graph/commit-chip.tsx"
+  "src/graph/row-guides.ts"
+  "src/graph/branch-pill.tsx"
+  "src/graph/rail-labels.ts"
+)
+
+touch_files=(
+  "src/graph/layout.ts"
+  "src/graph/colors.ts"
+  "src/graph/column-order.ts"
+  "src/graph/row-span.ts"
+  "src/graph/grouped-rows.ts"
+  "src/graph/label-width.ts"
+  "src/graph/path-smoothing.ts"
+  "src/graph/edge-padding.ts"
+  "src/graph/footer-gap.ts"
+  "src/graph/branch-order.ts"
+  "src/graph/outer-padding.ts"
+  "src/graph/rail-heights.ts"
+)
+
+lane_biases=(
+  "shallow-left"
+  "far-right"
+  "center"
+  "upper-left"
+  "lower-right"
+  "outer-right"
+)
+
+label_densities=(
+  "low"
+  "medium"
+  "high"
+)
+
+collision_risks=(
+  "low"
+  "medium"
+)
+
+pick_random() {
+  local values=("$@")
+  echo "${values[RANDOM % ${#values[@]}]}"
+}
+
+pick_two_distinct() {
+  local values=("$@")
+  local first_index second_index
+
+  first_index=$((RANDOM % ${#values[@]}))
+  second_index=$((RANDOM % ${#values[@]}))
+
+  while [[ "$second_index" -eq "$first_index" ]]; do
+    second_index=$((RANDOM % ${#values[@]}))
+  done
+
+  printf '%s\n%s\n' "${values[$first_index]}" "${values[$second_index]}"
+}
+
+cleanup_extra_branches() {
+  while IFS= read -r branch; do
+    [[ -z "$branch" ]] && continue
+
+    if [[ "$branch" =~ ^test-branch-([0-9]+)$ ]]; then
+      local number="${BASH_REMATCH[1]}"
+      if (( number > branch_count )); then
+        git branch -D "$branch" >/dev/null
+        echo "Removed $branch"
+      fi
+    fi
+  done < <(git for-each-ref --format='%(refname:short)' refs/heads/test-branch-*)
+}
+
+restore_main() {
+  git switch main >/dev/null 2>&1 || true
+}
+
+trap restore_main EXIT
+
+git switch main >/dev/null 2>&1
+cleanup_extra_branches
+
+for ((i = 1; i <= branch_count; i++)); do
+  branch="test-branch-$i"
+  dir="fixtures/commit-graph/$branch"
+
+  theme="$(pick_random "${themes[@]}")"
+  seed_note="$(pick_random "${seed_notes[@]}")"
+  adjustment="$(pick_random "${adjustments[@]}")"
+  status_line="$(pick_random "${statuses[@]}")"
+  segment="$(pick_random "${segments[@]}")"
+  lane_bias="$(pick_random "${lane_biases[@]}")"
+  label_density="$(pick_random "${label_densities[@]}")"
+  collision_risk="$(pick_random "${collision_risks[@]}")"
+
+  selected_layout_files=($(pick_two_distinct "${layout_files[@]}"))
+  selected_touch_files=($(pick_two_distinct "${touch_files[@]}"))
+
+  git switch -C "$branch" main >/dev/null 2>&1
+  mkdir -p "$dir"
+
+  cat > "$dir/history.txt" <<EOF
+branch: $branch
+commit: 1
+theme: $theme
+files:
+- ${selected_layout_files[0]}
+- ${selected_layout_files[1]}
+note: $seed_note
+EOF
+
+  git add -- "$dir/history.txt"
+  git commit -m "$branch: seed graph data" >/dev/null
+
+  cat > "$dir/history.txt" <<EOF
+branch: $branch
+commit: 2
+theme: $theme
+files:
+- ${selected_layout_files[0]}
+- ${selected_layout_files[1]}
+note: $seed_note
+adjustment: $adjustment
+EOF
+
+  cat > "$dir/metrics.json" <<EOF
+{
+  "branch": "$branch",
+  "commit": 2,
+  "segment": "$segment",
+  "touches": [
+    "${selected_touch_files[0]}",
+    "${selected_touch_files[1]}"
+  ]
+}
+EOF
+
+  git add -- "$dir/history.txt" "$dir/metrics.json"
+  git commit -m "$branch: add layout metrics" >/dev/null
+
+  cat > "$dir/history.txt" <<EOF
+branch: $branch
+commit: 3
+theme: $theme
+files:
+- ${selected_layout_files[0]}
+- ${selected_layout_files[1]}
+note: $seed_note
+adjustment: $adjustment
+status: $status_line
+EOF
+
+  cat > "$dir/review.md" <<EOF
+# $branch review
+
+- lane bias: $lane_bias
+- label density: $label_density
+- collision risk: $collision_risk
+EOF
+
+  git add -- "$dir/history.txt" "$dir/review.md"
+  git commit -m "$branch: finalize lane notes" >/dev/null
+
+  echo "Created $branch with 3 commits"
+done
+
+git switch main >/dev/null 2>&1
+trap - EXIT
+
+echo "Done. Generated test-branch-1..$branch_count from main."
