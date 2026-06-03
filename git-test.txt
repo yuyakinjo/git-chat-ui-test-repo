@@ -1,0 +1,6 @@
+# Git Test File
+
+This file was created for testing Git operations.
+
+- Created on: 2026-06-03
+- Purpose: staging, committing, and diff testing
