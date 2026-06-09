@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
+git -C "$repo_root" reset --hard
+git -C "$repo_root" clean -fd
 git -C "$repo_root" switch checkout-carry-start
 git -C "$repo_root" reset --hard checkout-carry-start
 git -C "$repo_root" clean -fd
