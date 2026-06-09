@@ -1,0 +1,3 @@
+success line 1 base
+success line 2 shared
+success line 3 base
