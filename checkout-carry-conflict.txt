@@ -1,2 +1,2 @@
-conflict line base
+conflict line target branch
 conflict line shared
