@@ -7,7 +7,8 @@
     "generate": "bun generate-test-files.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node": "^25.9.3"
   },
   "peerDependencies": {
     "typescript": "^5"
