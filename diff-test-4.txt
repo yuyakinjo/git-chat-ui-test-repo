@@ -1,0 +1,5 @@
+Diff test file 4
+
+Sample paragraph used to generate visible changes.
+First item: alpha
+Second item: beta

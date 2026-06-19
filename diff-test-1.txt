@@ -1,0 +1,5 @@
+Diff test file 1
+
+This is sample text for checking file additions.
+Line A: apple
+Line B: banana

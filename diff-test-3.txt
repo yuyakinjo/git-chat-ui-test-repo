@@ -1,0 +1,5 @@
+Diff test file 3
+
+Random notes for repository UI testing.
+Color: blue
+Shape: circle

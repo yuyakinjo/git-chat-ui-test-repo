@@ -1,0 +1,5 @@
+Diff test file 5
+
+Plain text content for diff experiments.
+Environment: local
+Purpose: testing

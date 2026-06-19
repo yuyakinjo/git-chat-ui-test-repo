@@ -1,0 +1,5 @@
+Diff test file 2
+
+Temporary content for diff verification.
+Value: 12345
+Status: draft
